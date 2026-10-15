@@ -903,6 +903,7 @@ function truTest(a){let ps=a==='all'?shuffle(TRU_N.flatMap(n=>TRU_PAIRS(n))).sli
 
 /* ============ In phiếu cho bố mẹ ============ */
 let prt={w:null,sub:'all',ans:true};
+let mixSel={c:true,t:true,n:false};
 function vPrintHub(){
   if(prt.w==null)prt.w=curWeek();
   setView(`${topbar('In phiếu bài tập')}<main class="wrap">
@@ -914,10 +915,12 @@ function vPrintHub(){
     <p class="hint">Bảng cộng</p><div class="chips">${['6','7','8','9','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="cong|${n}">${n==='all'?'Trộn cả 4 bảng':'Bảng '+n}</button>`).join('')}</div>
     <p class="hint">Bảng trừ</p><div class="chips">${['11','12','13','14','15','16','17','18','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="tru|${n}">${n==='all'?'Trộn cả 8 bảng':n+' trừ'}</button>`).join('')}</div>
     <p class="hint">Bảng nhân</p><div class="chips">${['2','3','4','5','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="nhan|${n}">${n==='all'?'Trộn cả 4 bảng':'Bảng '+n}</button>`).join('')}</div>
+    <p class="hint">Trộn phép tính (chạm để chọn 2 hoặc 3 phép)</p><div class="chips" id="mixC">${[['c','Cộng'],['t','Trừ'],['n','Nhân']].map(x=>`<button type="button" class="chip ${mixSel[x[0]]?'on':''}" data-op="${x[0]}">${x[1]}</button>`).join('')}</div><button type="button" class="btn" data-act="prMix" style="margin-top:.5rem">In đề trộn các phép đã chọn</button>
     <p class="hint">Đề toán trừ (đủ dạng: tính nhẩm, tìm số, bài toán có lời văn)</p><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="detru|20">Trừ trong phạm vi 20</button><button type="button" class="chip" data-act="prGen" data-arg="detru|100">Trừ phạm vi 100 (không nhớ)</button><button type="button" class="chip" data-act="prGen" data-arg="detru|100c">Trừ có nhớ phạm vi 100</button></div>
     <p class="hint">Toán vui</p><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="vui|">10 câu đố vui</button></div></section>
    <section class="card flds"><h3>Tờ bảng để dán học thuộc</h3><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="ref|trumat">Bảng trừ ô vuông</button><button type="button" class="chip" data-act="prGen" data-arg="ref|trufull">Bảng trừ đầy đủ 11–18</button><button type="button" class="chip" data-act="prGen" data-arg="ref|congmat">Bảng cộng ô vuông 1–9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|congfull">Bảng cộng đầy đủ 2–9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|cong">Bảng cộng 6, 7, 8, 9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|nhan">Bảng nhân 2, 3, 4, 5</button></div></section>
   </main>`,()=>{
+    $('#mixC').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.op;mixSel[k]=!mixSel[k];b.classList.toggle('on',mixSel[k])});
     $('#prW').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;prt.w=+b.dataset.w;$$('.chip',$('#prW')).forEach(x=>x.classList.toggle('on',x===b))});
     $('#prS').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;prt.sub=b.dataset.v;$$('button',$('#prS')).forEach(x=>x.classList.toggle('on',x===b))});
     $('#prA').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;prt.ans=b.dataset.v==='1';$$('button',$('#prA')).forEach(x=>x.classList.toggle('on',x===b))});
@@ -1070,6 +1073,13 @@ function prGenDoc(arg){
     title=tru?(a==='all'?'Luyện bảng trừ 11 đến 18':'Luyện '+a+' trừ'):`${cong?'Luyện bảng cộng':'Luyện bảng nhân'} ${a==='all'?tabs.join(', '):a}`;
     body=`<section class="sheet"><div class="phd"><b>${title}</b><span>Họ và tên: ${LN}  Ngày: ${LN}</span></div><p class="pq">Tính nhẩm, ghi kết quả. Thời gian: ${LN} phút. Đúng: ${LN} / 24</p>${grid(items)}</section>`;
     ans=`<section class="sheet ansp"><div class="phd"><b>Đáp án (dành cho bố mẹ)</b></div>${answers(items)}</section>`;
+  }else if(k==='mix'){
+    const sy={c:'+',t:'−',n:'×'},nm={c:'cộng',t:'trừ',n:'nhân'};const ops=a.split('');
+    const pool={c:[6,7,8,9].flatMap(n=>BANG_PAIRS(n)),t:TRU_N.flatMap(n=>TRU_PAIRS(n)),n:[2,3,4,5].flatMap(n=>NHAN_PAIRS(n))};
+    const items=[];for(let i=0;i<24;i++){const o=ops[i%ops.length];const p=pickOne(pool[o]);const sw=o!=='t'&&Math.random()<.4;items.push({q:`${sw?p[1]:p[0]} ${sy[o]} ${sw?p[0]:p[1]} =`,a:p[2]})}
+    const its=shuffle(items);title='Luyện '+ops.map(o=>nm[o]).join(', ');
+    body=`<section class="sheet"><div class="phd"><b>${title}</b><span>Họ và tên: ${LN}  Ngày: ${LN}</span></div><p class="pq">Chú ý dấu phép tính. Thời gian: ${LN} phút. Đúng: ${LN} / 24</p>${grid(its)}</section>`;
+    ans=`<section class="sheet ansp"><div class="phd"><b>Đáp án (dành cho bố mẹ)</b></div>${answers(its)}</section>`;
   }else if(k==='detru'){
     const big=a!=='20';const tw=()=>{let w;do{w=G.word(big)}while(!/còn lại|nhiều hơn[^.]*bao nhiêu/.test(w.q)||/Hỏi \S+ có bao nhiêu/.test(w.q));return w};
     const plan=a==='20'?['sub20','sub20','unknown20','unknown20','moreless','TW','TW','TW']:a==='100'?['sub100','sub100','sub100','moreless','TW','TW','TW']:['sub100c','sub100c','sub100c','moreless','TW','TW','TW'];
@@ -2139,7 +2149,7 @@ const ACT={
   dAll:()=>{const it=curItem();sayChunks(it.text,.8)}, dOne:a=>{const it=curItem();sayChunks(st.sents[+a],.8)}, dStop:()=>{sayToken++;stopSay()},
   redoWrong:()=>{const r=run;const items=r.wrongIdx.map(i=>{const q=r.items[i];return Object.assign({},q,{wk:q.wk||q.key})});run=null;startRun({title:'Làm lại câu sai',kind:'redo',subject:r.subject,items})},
   endRun:()=>{if(run&&run.timerId)clearInterval(run.timerId);run=null;stopSay();if(stack.length>1)stack.pop();stack[stack.length-1]()},
-  prHub:()=>go(vPrintHub), prView:()=>go(vPrintDoc), prGen:a=>go(()=>prGenDoc(a),true), doPrint:()=>doPrint(), pdfView:()=>pdfView(), pdfSave:()=>pdfSave(), pdfClose:()=>pdfClose(), pdfSaveLast:()=>{if(pdfLast)pdfDeliver(pdfLast.blob)}, bang:()=>go(vBang), nhan:()=>go(vNhan), tru:()=>go(vTru), truOne:a=>go(()=>vTruOne(a)), truSay:a=>truSay(a), truTest:a=>truTest(a), nhanOne:a=>go(()=>vNhanOne(a)), nhanSay:nhanSay, nhanTest:nhanTest, profs:()=>go(vProfs), profPick:a=>switchProf(a), profAdd:addProf, bkMake:makeBackup, bkRestore:restoreCode, bangReview:bangReview, matchGo:a=>go(()=>vMatch(a)), bangOne:a=>go(()=>vBangOne(a)), bangSay:bangSay, bangTest:bangTest, wrongRun:runWrong, funRun:runFun, customRun:runCustom,
+  prHub:()=>go(vPrintHub), prView:()=>go(vPrintDoc), prGen:a=>go(()=>prGenDoc(a),true), prMix:()=>{const k=['c','t','n'].filter(x=>mixSel[x]);if(k.length<2){toast('Chọn ít nhất 2 phép tính nhé.');return}go(()=>prGenDoc('mix|'+k.join('')),true)}, doPrint:()=>doPrint(), pdfView:()=>pdfView(), pdfSave:()=>pdfSave(), pdfClose:()=>pdfClose(), pdfSaveLast:()=>{if(pdfLast)pdfDeliver(pdfLast.blob)}, bang:()=>go(vBang), nhan:()=>go(vNhan), tru:()=>go(vTru), truOne:a=>go(()=>vTruOne(a)), truSay:a=>truSay(a), truTest:a=>truTest(a), nhanOne:a=>go(()=>vNhanOne(a)), nhanSay:nhanSay, nhanTest:nhanTest, profs:()=>go(vProfs), profPick:a=>switchProf(a), profAdd:addProf, bkMake:makeBackup, bkRestore:restoreCode, bangReview:bangReview, matchGo:a=>go(()=>vMatch(a)), bangOne:a=>go(()=>vBangOne(a)), bangSay:bangSay, bangTest:bangTest, wrongRun:runWrong, funRun:runFun, customRun:runCustom,
   examHub:()=>go(vExamHub), exam:a=>runExam(a), partRun:a=>{const [s,t]=a.split('|');runPart(s,t)},
   builder:()=>go(vBuilder), builderGo:builderGo, builderPrint:()=>{if(bldPool().err){toast(bldPool().err);return}go(builderPrintDoc)}, builderPrintAgain:()=>builderPrintDoc(),
   racer:a=>{S.set.racer=+a;save();vSettings()}, ptab:a=>{ptab=a;vParent();window.scrollTo(0,0)}, tab:a=>{homeTab=a;vHome();window.scrollTo(0,0)}, readNo:a=>toast('Bài '+a+' chưa có nội dung. Bố mẹ thêm ở mục Dành cho bố mẹ nhé.'), reading:()=>go(vReading), readOne:a=>go(()=>vReadOne(+a)), rdStart:rdStart, rdStop:rdStop, rdCalc:rdCalc, readAdd:()=>{const x=($('#rcText').value||'').trim();if(wordsOf(x)<8){toast('Bố mẹ gõ hoặc dán cả đoạn văn (ít nhất vài câu) nhé.');return}S.readCustom=S.readCustom||[];S.readCustom.push({text:x,bai:+($('#rcBai').value||0)});save();vParent();toast('Đã thêm bài đọc.')}, readDel:a=>{S.readCustom.splice(+a,1);save();vParent()}, rdListen:()=>sayChunks(rd.t.text,.85),
