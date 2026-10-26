@@ -120,6 +120,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .brow{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.7rem .9rem;border:2px solid var(--line);border-radius:.9rem;background:var(--bg);font-family:var(--f-display);font-size:1.25rem;color:var(--ink);min-height:3.2rem}
 .pdfov{position:fixed;inset:0;z-index:50;background:#555;overflow:auto;-webkit-overflow-scrolling:touch}.pdfbar{position:sticky;top:0;z-index:2;display:flex;gap:.6rem;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:.6rem .9rem;background:var(--surface,#fff);border-bottom:2px solid var(--ink,#1E2B4F)}.pdfpg{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1rem .6rem 3rem}.pdfpg figure{margin:0;width:min(100%,820px)}.pdfpg img{display:block;width:100%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}.pdfpg figcaption{color:#fff;text-align:center;font-size:.85rem;margin-top:.3rem}
 @media print{.pdfov{display:none!important}}
+.lsh{margin:.5rem 0 .1rem;padding:.2rem .5rem;background:#EEE6C8;border-radius:.4rem;font-size:.95rem;break-after:avoid;page-break-after:avoid}
 .brow.sp{background:#FFE9A8;border-color:var(--ink)}
 .brow .res{color:var(--toan)}
 .brow.hid .res{visibility:hidden}
@@ -903,6 +904,16 @@ function truTest(a){let ps=a==='all'?shuffle(TRU_N.flatMap(n=>TRU_PAIRS(n))).sli
 
 /* ============ In phiếu cho bố mẹ ============ */
 let prt={w:null,sub:'all',ans:true};
+let lsSel=new Set(),lsPer=4;
+function lsKeyInfo(k){const n=+k.slice(1);if(k[0]==='b'){const b=BK[n];return b?{sub:'toan',n,title:b.t,prac:b.prac}:null}const b=TVK[n];return b?{sub:'tv',n,title:b.t,prac:tvPrac(b)}:null}
+function lsItems(k,per){
+  const o=lsKeyInfo(k);if(!o)return[];const pr=o.prac||{};let its=[];
+  if(pr.g){for(let i=0;i<per;i++)its.push(G[pr.g]())}
+  else if(pr.gs){for(let i=0;i<per;i++)its.push(G[pickOne(pr.gs)]())}
+  else if(pr.gen){for(let i=0;i<per;i++)its.push(pr.gen())}
+  else if(pr.tags&&pr.tags.length){const pool=[];SHEETS.forEach(s=>{if(s.subject===o.sub)s.items.forEach(it=>{if(pr.tags.includes(tagOf(it,s.subject)))pool.push(it)})});its=shuffle(pool).slice(0,per)}
+  return its}
+function lsChips(sub){const o=[];const src=sub==='toan'?BK:TVK;Object.keys(src).map(Number).sort((a,b)=>a-b).forEach(n=>{const b=src[n],k=(sub==='toan'?'b':'t')+n;o.push(`<button type="button" class="chip ${lsSel.has(k)?'on':''}" data-ls="${k}" title="${esc(b.t)}">Bài ${n}. ${esc(b.t.length>26?b.t.slice(0,25)+'…':b.t)}</button>`)});return o.join('')}
 let mixSel={c:true,t:true,n:false};
 function vPrintHub(){
   if(prt.w==null)prt.w=curWeek();
@@ -915,11 +926,19 @@ function vPrintHub(){
     <p class="hint">Bảng cộng</p><div class="chips">${['6','7','8','9','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="cong|${n}">${n==='all'?'Trộn cả 4 bảng':'Bảng '+n}</button>`).join('')}</div>
     <p class="hint">Bảng trừ</p><div class="chips">${['11','12','13','14','15','16','17','18','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="tru|${n}">${n==='all'?'Trộn cả 8 bảng':n+' trừ'}</button>`).join('')}</div>
     <p class="hint">Bảng nhân</p><div class="chips">${['2','3','4','5','all'].map(n=>`<button type="button" class="chip" data-act="prGen" data-arg="nhan|${n}">${n==='all'?'Trộn cả 4 bảng':'Bảng '+n}</button>`).join('')}</div>
+    <p class="hint"><b>Phiếu theo bài:</b> chạm để chọn nhiều bài (Toán và Tiếng Việt), rồi bấm in.</p>
+    <p class="hint">Toán</p><div class="chips" id="lsT">${lsChips('toan')}</div>
+    <p class="hint">Tiếng Việt</p><div class="chips" id="lsV">${lsChips('tv')}</div>
+    <p class="hint">Số câu mỗi bài</p><div class="seg" id="lsP">${[3,4,6].map(n=>`<button type="button" data-v="${n}" class="${lsPer===n?'on':''}">${n} câu</button>`).join('')}</div>
+    <div class="row" style="margin-top:.5rem"><button type="button" class="btn pri" data-act="prLs">In phiếu các bài đã chọn</button><button type="button" class="btn" data-act="prLsClear">Bỏ chọn hết</button></div><p class="hint" id="lsN"></p>
     <p class="hint">Trộn phép tính (chạm để chọn 2 hoặc 3 phép)</p><div class="chips" id="mixC">${[['c','Cộng'],['t','Trừ'],['n','Nhân']].map(x=>`<button type="button" class="chip ${mixSel[x[0]]?'on':''}" data-op="${x[0]}">${x[1]}</button>`).join('')}</div><button type="button" class="btn" data-act="prMix" style="margin-top:.5rem">In đề trộn các phép đã chọn</button>
     <p class="hint">Đề toán trừ (đủ dạng: tính nhẩm, tìm số, bài toán có lời văn)</p><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="detru|20">Trừ trong phạm vi 20</button><button type="button" class="chip" data-act="prGen" data-arg="detru|100">Trừ phạm vi 100 (không nhớ)</button><button type="button" class="chip" data-act="prGen" data-arg="detru|100c">Trừ có nhớ phạm vi 100</button></div>
     <p class="hint">Toán vui</p><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="vui|">10 câu đố vui</button></div></section>
    <section class="card flds"><h3>Tờ bảng để dán học thuộc</h3><div class="chips"><button type="button" class="chip" data-act="prGen" data-arg="ref|trumat">Bảng trừ ô vuông</button><button type="button" class="chip" data-act="prGen" data-arg="ref|trufull">Bảng trừ đầy đủ 11–18</button><button type="button" class="chip" data-act="prGen" data-arg="ref|congmat">Bảng cộng ô vuông 1–9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|congfull">Bảng cộng đầy đủ 2–9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|cong">Bảng cộng 6, 7, 8, 9</button><button type="button" class="chip" data-act="prGen" data-arg="ref|nhan">Bảng nhân 2, 3, 4, 5</button></div></section>
   </main>`,()=>{
+    const lsUp=()=>{$('#lsN').textContent=lsSel.size?'Đã chọn '+lsSel.size+' bài.':'Chưa chọn bài nào.'};lsUp();
+    ['#lsT','#lsV'].forEach(id=>$(id).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.ls;if(lsSel.has(k))lsSel.delete(k);else lsSel.add(k);b.classList.toggle('on',lsSel.has(k));lsUp()}));
+    $('#lsP').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;lsPer=+b.dataset.v;$$('button',$('#lsP')).forEach(x=>x.classList.toggle('on',x===b))});
     $('#mixC').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.op;mixSel[k]=!mixSel[k];b.classList.toggle('on',mixSel[k])});
     $('#prW').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;prt.w=+b.dataset.w;$$('.chip',$('#prW')).forEach(x=>x.classList.toggle('on',x===b))});
     $('#prS').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;prt.sub=b.dataset.v;$$('button',$('#prS')).forEach(x=>x.classList.toggle('on',x===b))});
@@ -1073,6 +1092,14 @@ function prGenDoc(arg){
     title=tru?(a==='all'?'Luyện bảng trừ 11 đến 18':'Luyện '+a+' trừ'):`${cong?'Luyện bảng cộng':'Luyện bảng nhân'} ${a==='all'?tabs.join(', '):a}`;
     body=`<section class="sheet"><div class="phd"><b>${title}</b><span>Họ và tên: ${LN}  Ngày: ${LN}</span></div><p class="pq">Tính nhẩm, ghi kết quả. Thời gian: ${LN} phút. Đúng: ${LN} / 24</p>${grid(items)}</section>`;
     ans=`<section class="sheet ansp"><div class="phd"><b>Đáp án (dành cho bố mẹ)</b></div>${answers(items)}</section>`;
+  }else if(k==='ls'){
+    const keys=a.split(',').filter(Boolean).sort((x,y)=>(x[0]===y[0]?+x.slice(1)-+y.slice(1):(x[0]==='b'?-1:1)));
+    let n=0;const groups=keys.map(kk=>({o:lsKeyInfo(kk),its:lsItems(kk,lsPer)})).filter(g=>g.o&&g.its.length);
+    {const T=groups.filter(g=>g.o.sub==='toan').map(g=>g.o.n),V=groups.filter(g=>g.o.sub==='tv').map(g=>g.o.n);title='Phiếu '+[T.length?'Toán bài '+T.join(', '):'',V.length?'Tiếng Việt bài '+V.join(', '):''].filter(Boolean).join(' và ')}
+    const lab=g=>`Bài ${g.o.n}. ${esc(g.o.title)} (${g.o.sub==='toan'?'Toán':'Tiếng Việt'})`;
+    body=`<section class="sheet"><div class="phd"><b>${esc(title)}</b><span>Họ và tên: ${LN}  Ngày: ${LN}</span></div><div class="pits">${groups.map(g=>`<div class="lsh" style="grid-column:1/-1"><b>${lab(g)}</b></div>`+g.its.map(it=>{n++;return `<div class="pit"><span class="pn">${n}</span><div>${pItem(it)}</div></div>`}).join('')).join('')}</div></section>`;
+    let m=0;ans=`<section class="sheet ansp"><div class="phd"><b>Đáp án (dành cho bố mẹ)</b></div><ol>${groups.map(g=>g.its.map(it=>{m++;return `<li>${esc(pAns(it))}${it.hint?` <small>(${esc(it.hint)})</small>`:''}</li>`}).join('')).join('')}</ol></section>`;
+    if(!groups.length){body='<section class="sheet"><p>Các bài đã chọn chưa có câu luyện. Bố mẹ chọn bài khác nhé.</p></section>';ans=''}
   }else if(k==='mix'){
     const sy={c:'+',t:'−',n:'×'},nm={c:'cộng',t:'trừ',n:'nhân'};const ops=a.split('');
     const pool={c:[6,7,8,9].flatMap(n=>BANG_PAIRS(n)),t:TRU_N.flatMap(n=>TRU_PAIRS(n)),n:[2,3,4,5].flatMap(n=>NHAN_PAIRS(n))};
@@ -2149,7 +2176,7 @@ const ACT={
   dAll:()=>{const it=curItem();sayChunks(it.text,.8)}, dOne:a=>{const it=curItem();sayChunks(st.sents[+a],.8)}, dStop:()=>{sayToken++;stopSay()},
   redoWrong:()=>{const r=run;const items=r.wrongIdx.map(i=>{const q=r.items[i];return Object.assign({},q,{wk:q.wk||q.key})});run=null;startRun({title:'Làm lại câu sai',kind:'redo',subject:r.subject,items})},
   endRun:()=>{if(run&&run.timerId)clearInterval(run.timerId);run=null;stopSay();if(stack.length>1)stack.pop();stack[stack.length-1]()},
-  prHub:()=>go(vPrintHub), prView:()=>go(vPrintDoc), prGen:a=>go(()=>prGenDoc(a),true), prMix:()=>{const k=['c','t','n'].filter(x=>mixSel[x]);if(k.length<2){toast('Chọn ít nhất 2 phép tính nhé.');return}go(()=>prGenDoc('mix|'+k.join('')),true)}, doPrint:()=>doPrint(), pdfView:()=>pdfView(), pdfSave:()=>pdfSave(), pdfClose:()=>pdfClose(), pdfSaveLast:()=>{if(pdfLast)pdfDeliver(pdfLast.blob)}, bang:()=>go(vBang), nhan:()=>go(vNhan), tru:()=>go(vTru), truOne:a=>go(()=>vTruOne(a)), truSay:a=>truSay(a), truTest:a=>truTest(a), nhanOne:a=>go(()=>vNhanOne(a)), nhanSay:nhanSay, nhanTest:nhanTest, profs:()=>go(vProfs), profPick:a=>switchProf(a), profAdd:addProf, bkMake:makeBackup, bkRestore:restoreCode, bangReview:bangReview, matchGo:a=>go(()=>vMatch(a)), bangOne:a=>go(()=>vBangOne(a)), bangSay:bangSay, bangTest:bangTest, wrongRun:runWrong, funRun:runFun, customRun:runCustom,
+  prHub:()=>go(vPrintHub), prView:()=>go(vPrintDoc), prGen:a=>go(()=>prGenDoc(a),true), prLs:()=>{if(!lsSel.size){toast('Chọn ít nhất 1 bài nhé.');return}go(()=>prGenDoc('ls|'+[...lsSel].join(',')),true)}, prLsClear:()=>{lsSel.clear();vPrintHub()}, prMix:()=>{const k=['c','t','n'].filter(x=>mixSel[x]);if(k.length<2){toast('Chọn ít nhất 2 phép tính nhé.');return}go(()=>prGenDoc('mix|'+k.join('')),true)}, doPrint:()=>doPrint(), pdfView:()=>pdfView(), pdfSave:()=>pdfSave(), pdfClose:()=>pdfClose(), pdfSaveLast:()=>{if(pdfLast)pdfDeliver(pdfLast.blob)}, bang:()=>go(vBang), nhan:()=>go(vNhan), tru:()=>go(vTru), truOne:a=>go(()=>vTruOne(a)), truSay:a=>truSay(a), truTest:a=>truTest(a), nhanOne:a=>go(()=>vNhanOne(a)), nhanSay:nhanSay, nhanTest:nhanTest, profs:()=>go(vProfs), profPick:a=>switchProf(a), profAdd:addProf, bkMake:makeBackup, bkRestore:restoreCode, bangReview:bangReview, matchGo:a=>go(()=>vMatch(a)), bangOne:a=>go(()=>vBangOne(a)), bangSay:bangSay, bangTest:bangTest, wrongRun:runWrong, funRun:runFun, customRun:runCustom,
   examHub:()=>go(vExamHub), exam:a=>runExam(a), partRun:a=>{const [s,t]=a.split('|');runPart(s,t)},
   builder:()=>go(vBuilder), builderGo:builderGo, builderPrint:()=>{if(bldPool().err){toast(bldPool().err);return}go(builderPrintDoc)}, builderPrintAgain:()=>builderPrintDoc(),
   racer:a=>{S.set.racer=+a;save();vSettings()}, ptab:a=>{ptab=a;vParent();window.scrollTo(0,0)}, tab:a=>{homeTab=a;vHome();window.scrollTo(0,0)}, readNo:a=>toast('Bài '+a+' chưa có nội dung. Bố mẹ thêm ở mục Dành cho bố mẹ nhé.'), reading:()=>go(vReading), readOne:a=>go(()=>vReadOne(+a)), rdStart:rdStart, rdStop:rdStop, rdCalc:rdCalc, readAdd:()=>{const x=($('#rcText').value||'').trim();if(wordsOf(x)<8){toast('Bố mẹ gõ hoặc dán cả đoạn văn (ít nhất vài câu) nhé.');return}S.readCustom=S.readCustom||[];S.readCustom.push({text:x,bai:+($('#rcBai').value||0)});save();vParent();toast('Đã thêm bài đọc.')}, readDel:a=>{S.readCustom.splice(+a,1);save();vParent()}, rdListen:()=>sayChunks(rd.t.text,.85),
