@@ -497,7 +497,7 @@ function streak(){
   while(S.days[key(d)]&&S.days[key(d)].q>0){n++;d.setDate(d.getDate()-1)}
   return n;
 }
-function curWeek(){const start=new Date(2026,8,5);const w=Math.floor((Date.now()-start.getTime())/(7*864e5))+1;return Math.max(1,Math.min(18,w))}
+function curWeek(){const start=new Date(2026,7,31);const w=Math.floor((Date.now()-start.getTime())/(7*864e5))+1;return Math.max(1,Math.min(18,w))}
 const LEVELS=[0,15,40,80,140,220,320,450,600,800];
 function level(){let l=0;for(let i=0;i<LEVELS.length;i++)if(S.stars>=LEVELS[i])l=i;const nx=LEVELS[l+1];return{l:l+1,left:nx?nx-S.stars:0}}
 const MEDALS=[['10 sao',()=>S.stars>=10],['50 sao',()=>S.stars>=50],['100 sao',()=>S.stars>=100],['250 sao',()=>S.stars>=250],['500 sao',()=>S.stars>=500],['3 ngày liền',()=>streak()>=3],['7 ngày liền',()=>streak()>=7],['14 ngày liền',()=>streak()>=14],['Thuộc bảng cộng',()=>bangAllDone()]];
